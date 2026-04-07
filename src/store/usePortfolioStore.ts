@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { db } from '../lib/firebase';
+import { ref, onValue, push, set as firebaseSet, update, remove } from 'firebase/database';
 
 export interface PortfolioItem {
-  id: number;
+  id: string;
   title: string;
   category: string;
   image: string;
@@ -10,77 +11,66 @@ export interface PortfolioItem {
   rowSpan: string;
 }
 
-const initialProjects: PortfolioItem[] = [
-  {
-    id: 1,
-    title: 'Neon Cyber',
-    category: 'Letreiro Luminoso',
-    image: 'https://picsum.photos/seed/neon1/800/1000',
-    colSpan: 'md:col-span-2',
-    rowSpan: 'md:row-span-2',
-  },
-  {
-    id: 2,
-    title: 'Tech Hub',
-    category: 'Fachada ACM',
-    image: 'https://picsum.photos/seed/acm1/800/600',
-    colSpan: 'md:col-span-1',
-    rowSpan: 'md:row-span-1',
-  },
-  {
-    id: 3,
-    title: 'Future Print',
-    category: 'Impressão Digital',
-    image: 'https://picsum.photos/seed/print1/800/600',
-    colSpan: 'md:col-span-1',
-    rowSpan: 'md:row-span-1',
-  },
-  {
-    id: 4,
-    title: 'Glow Box',
-    category: 'Letreiro Luminoso',
-    image: 'https://picsum.photos/seed/neon2/800/600',
-    colSpan: 'md:col-span-1',
-    rowSpan: 'md:row-span-1',
-  },
-  {
-    id: 5,
-    title: 'Corporate HQ',
-    category: 'Fachada ACM',
-    image: 'https://picsum.photos/seed/acm2/800/600',
-    colSpan: 'md:col-span-1',
-    rowSpan: 'md:row-span-1',
-  },
-];
-
 interface PortfolioStore {
   projects: PortfolioItem[];
-  addProject: (project: Omit<PortfolioItem, 'id'>) => void;
-  updateProject: (id: number, project: Partial<PortfolioItem>) => void;
-  deleteProject: (id: number) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchProjects: () => void;
+  addProject: (project: Omit<PortfolioItem, 'id'>) => Promise<void>;
+  updateProject: (id: string, project: Partial<PortfolioItem>) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
 }
 
-export const usePortfolioStore = create<PortfolioStore>()(
-  persist(
-    (set) => ({
-      projects: initialProjects,
-      addProject: (project) =>
-        set((state) => ({
-          projects: [...state.projects, { ...project, id: Date.now() }],
-        })),
-      updateProject: (id, updatedProject) =>
-        set((state) => ({
-          projects: state.projects.map((p) =>
-            p.id === id ? { ...p, ...updatedProject } : p
-          ),
-        })),
-      deleteProject: (id) =>
-        set((state) => ({
-          projects: state.projects.filter((p) => p.id !== id),
-        })),
-    }),
-    {
-      name: 'portfolio-storage',
+export const usePortfolioStore = create<PortfolioStore>((set) => ({
+  projects: [],
+  isLoading: false,
+  error: null,
+
+  fetchProjects: () => {
+    set({ isLoading: true });
+    const portfolioRef = ref(db, 'portfolio');
+    const unsubscribe = onValue(portfolioRef, (snapshot) => {
+      const projects: PortfolioItem[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          projects.push({ id: childSnapshot.key, ...childSnapshot.val() } as PortfolioItem);
+        });
+      }
+      set({ projects, isLoading: false, error: null });
+    }, (error) => {
+      console.error("Error fetching portfolio:", error);
+      set({ error: error.message, isLoading: false });
+    });
+    
+    return () => unsubscribe();
+  },
+
+  addProject: async (project) => {
+    try {
+      const newRef = push(ref(db, 'portfolio'));
+      await firebaseSet(newRef, project);
+    } catch (error: any) {
+      console.error("Error adding project:", error);
+      set({ error: error.message });
     }
-  )
-);
+  },
+
+  updateProject: async (id, updatedProject) => {
+    try {
+      const projectRef = ref(db, `portfolio/${id}`);
+      await update(projectRef, updatedProject);
+    } catch (error: any) {
+      console.error("Error updating project:", error);
+      set({ error: error.message });
+    }
+  },
+
+  deleteProject: async (id) => {
+    try {
+      await remove(ref(db, `portfolio/${id}`));
+    } catch (error: any) {
+      console.error("Error deleting project:", error);
+      set({ error: error.message });
+    }
+  },
+}));

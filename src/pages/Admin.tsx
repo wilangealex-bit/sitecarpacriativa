@@ -13,7 +13,7 @@ export default function Admin() {
   
   // Portfolio State
   const { projects, addProject, updateProject, deleteProject } = usePortfolioStore();
-  const [isEditingPortfolio, setIsEditingPortfolio] = useState<number | null>(null);
+  const [isEditingPortfolio, setIsEditingPortfolio] = useState<string | null>(null);
   const [portfolioFormData, setPortfolioFormData] = useState({
     title: '',
     category: '',
@@ -24,7 +24,7 @@ export default function Admin() {
 
   // Catalog State
   const { items: catalogItems, addItem: addCatalogItem, updateItem: updateCatalogItem, deleteItem: deleteCatalogItem } = useCatalogStore();
-  const [isEditingCatalog, setIsEditingCatalog] = useState<number | null>(null);
+  const [isEditingCatalog, setIsEditingCatalog] = useState<string | null>(null);
   const [catalogFormData, setCatalogFormData] = useState({
     title: '',
     category: '',

@@ -1,94 +1,75 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { db } from '../lib/firebase';
+import { ref, onValue, push, set as firebaseSet, update, remove } from 'firebase/database';
 
 export interface CatalogItem {
-  id: number;
+  id: string;
   title: string;
   category: string;
   image: string;
   description: string;
 }
 
-const initialCatalog: CatalogItem[] = [
-  {
-    id: 1,
-    title: 'Adesivo Fosco',
-    category: 'Impressão',
-    image: 'https://picsum.photos/seed/print2/800/600',
-    description: 'Impressão de alta qualidade em adesivo fosco para vitrines e painéis.',
-  },
-  {
-    id: 2,
-    title: 'Papel de Parede Geométrico',
-    category: 'Papel de Parede',
-    image: 'https://picsum.photos/seed/wallpaper1/800/600',
-    description: 'Papel de parede com texturas geométricas modernas para escritórios.',
-  },
-  {
-    id: 3,
-    title: 'Lona Brilho 440g',
-    category: 'Impressão',
-    image: 'https://picsum.photos/seed/print3/800/600',
-    description: 'Lona de alta resistência para fachadas e outdoors.',
-  },
-  {
-    id: 4,
-    title: 'Papel de Parede Floral',
-    category: 'Papel de Parede',
-    image: 'https://picsum.photos/seed/wallpaper2/800/600',
-    description: 'Estampas florais exclusivas para ambientes internos.',
-  },
-  {
-    id: 5,
-    title: 'Adesivo Transparente',
-    category: 'Impressão',
-    image: 'https://picsum.photos/seed/print4/800/600',
-    description: 'Adesivo transparente ideal para divisórias de vidro.',
-  },
-  {
-    id: 6,
-    title: 'Papel de Parede Infantil',
-    category: 'Papel de Parede',
-    image: 'https://picsum.photos/seed/wallpaper3/800/600',
-    description: 'Decoração lúdica para quartos infantis e brinquedotecas.',
-  },
-  {
-    id: 7,
-    title: 'Banner Roll-up',
-    category: 'Impressão',
-    image: 'https://picsum.photos/seed/print5/800/600',
-    description: 'Estrutura portátil com impressão em lona para eventos.',
-  },
-];
-
 interface CatalogStore {
   items: CatalogItem[];
-  addItem: (item: Omit<CatalogItem, 'id'>) => void;
-  updateItem: (id: number, item: Partial<CatalogItem>) => void;
-  deleteItem: (id: number) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchItems: () => void;
+  addItem: (item: Omit<CatalogItem, 'id'>) => Promise<void>;
+  updateItem: (id: string, item: Partial<CatalogItem>) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
 }
 
-export const useCatalogStore = create<CatalogStore>()(
-  persist(
-    (set) => ({
-      items: initialCatalog,
-      addItem: (item) =>
-        set((state) => ({
-          items: [...state.items, { ...item, id: Date.now() }],
-        })),
-      updateItem: (id, updatedItem) =>
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === id ? { ...i, ...updatedItem } : i
-          ),
-        })),
-      deleteItem: (id) =>
-        set((state) => ({
-          items: state.items.filter((i) => i.id !== id),
-        })),
-    }),
-    {
-      name: 'catalog-storage',
+export const useCatalogStore = create<CatalogStore>((set) => ({
+  items: [],
+  isLoading: false,
+  error: null,
+
+  fetchItems: () => {
+    set({ isLoading: true });
+    const catalogRef = ref(db, 'catalog');
+    const unsubscribe = onValue(catalogRef, (snapshot) => {
+      const items: CatalogItem[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          items.push({ id: childSnapshot.key, ...childSnapshot.val() } as CatalogItem);
+        });
+      }
+      set({ items, isLoading: false, error: null });
+    }, (error) => {
+      console.error("Error fetching catalog:", error);
+      set({ error: error.message, isLoading: false });
+    });
+    
+    return () => unsubscribe();
+  },
+
+  addItem: async (item) => {
+    try {
+      const newRef = push(ref(db, 'catalog'));
+      await firebaseSet(newRef, item);
+    } catch (error: any) {
+      console.error("Error adding catalog item:", error);
+      set({ error: error.message });
     }
-  )
-);
+  },
+
+  updateItem: async (id, updatedItem) => {
+    try {
+      const itemRef = ref(db, `catalog/${id}`);
+      await update(itemRef, updatedItem);
+    } catch (error: any) {
+      console.error("Error updating catalog item:", error);
+      set({ error: error.message });
+    }
+  },
+
+  deleteItem: async (id) => {
+    try {
+      await remove(ref(db, `catalog/${id}`));
+    } catch (error: any) {
+      console.error("Error deleting catalog item:", error);
+      set({ error: error.message });
+    }
+  },
+}));

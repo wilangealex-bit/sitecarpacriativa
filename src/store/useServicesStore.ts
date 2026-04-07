@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { db } from '../lib/firebase';
+import { ref, onValue, update, get } from 'firebase/database';
 
 export interface ServiceItem {
   id: string;
@@ -77,22 +78,62 @@ const defaultServices: ServiceItem[] = [
 
 interface ServicesStore {
   services: ServiceItem[];
-  updateService: (id: string, updatedService: Partial<ServiceItem>) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchServices: () => void;
+  updateService: (id: string, updatedService: Partial<ServiceItem>) => Promise<void>;
+  initializeDefaultServices: () => Promise<void>;
 }
 
-export const useServicesStore = create<ServicesStore>()(
-  persist(
-    (set) => ({
-      services: defaultServices,
-      updateService: (id, updatedService) =>
-        set((state) => ({
-          services: state.services.map((service) =>
-            service.id === id ? { ...service, ...updatedService } : service
-          ),
-        })),
-    }),
-    {
-      name: 'services-storage',
+export const useServicesStore = create<ServicesStore>((set) => ({
+  services: [],
+  isLoading: false,
+  error: null,
+
+  fetchServices: () => {
+    set({ isLoading: true });
+    const servicesRef = ref(db, 'services');
+    const unsubscribe = onValue(servicesRef, (snapshot) => {
+      const services: ServiceItem[] = [];
+      if (snapshot.exists()) {
+        snapshot.forEach((childSnapshot) => {
+          services.push({ id: childSnapshot.key, ...childSnapshot.val() } as ServiceItem);
+        });
+        // Sort by ID to maintain order
+        services.sort((a, b) => a.id.localeCompare(b.id));
+      }
+      set({ services, isLoading: false, error: null });
+    }, (error) => {
+      console.error("Error fetching services:", error);
+      set({ error: error.message, isLoading: false });
+    });
+    
+    return () => unsubscribe();
+  },
+
+  updateService: async (id, updatedService) => {
+    try {
+      const serviceRef = ref(db, `services/${id}`);
+      await update(serviceRef, updatedService);
+    } catch (error: any) {
+      console.error("Error updating service:", error);
+      set({ error: error.message });
     }
-  )
-);
+  },
+
+  initializeDefaultServices: async () => {
+    try {
+      const servicesRef = ref(db, 'services');
+      const snapshot = await get(servicesRef);
+      if (!snapshot.exists()) {
+        const updates: any = {};
+        defaultServices.forEach((service) => {
+          updates[service.id] = service;
+        });
+        await update(servicesRef, updates);
+      }
+    } catch (error: any) {
+      console.error("Error initializing default services:\n", error.message);
+    }
+  }
+}));
