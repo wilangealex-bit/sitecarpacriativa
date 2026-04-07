@@ -1,6 +1,7 @@
 import { Zap, Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useSiteStore } from '../store/useSiteStore';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const { settings } = useSiteStore();
@@ -110,7 +111,7 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} {settings.brandName} {settings.brandHighlight}. Todos os direitos reservados.
           </p>
           <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-            <a href="/admin" className="text-blue-500 hover:text-blue-400 text-[10px] sm:text-xs uppercase tracking-widest transition-colors font-bold">Painel Admin</a>
+            <Link to="/admin" className="text-blue-500 hover:text-blue-400 text-[10px] sm:text-xs uppercase tracking-widest transition-colors font-bold">Painel Admin</Link>
             <a href="#" className="text-gray-500 hover:text-white text-[10px] sm:text-xs uppercase tracking-widest transition-colors">Termos</a>
             <a href="#" className="text-gray-500 hover:text-white text-[10px] sm:text-xs uppercase tracking-widest transition-colors">Privacidade</a>
           </div>
