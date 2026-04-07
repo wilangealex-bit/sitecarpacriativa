@@ -1,12 +1,14 @@
 import { motion, useScroll, useTransform } from 'motion/react';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import { useSiteStore } from '../store/useSiteStore';
+import { useClientsStore } from '../store/useClientsStore';
 
 export default function Hero() {
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 1000], [0, 300]);
   const opacity = useTransform(scrollY, [0, 500], [1, 0]);
   const { settings } = useSiteStore();
+  const { clients } = useClientsStore();
 
   return (
     <section
@@ -31,7 +33,7 @@ export default function Hero() {
       <div className="absolute inset-0 z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
 
       {/* Content */}
-      <div className="relative z-20 max-w-7xl mx-auto px-6 pt-32 text-center flex flex-col items-center">
+      <div className="relative z-20 max-w-7xl mx-auto px-6 pt-32 pb-20 text-center flex flex-col items-center">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -46,23 +48,49 @@ export default function Hero() {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2, ease: 'easeOut' }}
-          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white uppercase leading-[0.9] mb-6"
+          className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white uppercase leading-[1.2] sm:leading-[1.1] mb-6 max-w-5xl mx-auto px-4"
         >
-          {settings.heroTitle1} <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600">
+          {settings.heroTitle1}{' '}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-600 block sm:inline mt-2 sm:mt-0">
             {settings.heroTitleHighlight}
           </span>
-          <br /> {settings.heroTitle2}
+          {settings.heroTitle2 && (
+            <>{' '}{settings.heroTitle2}</>
+          )}
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4, ease: 'easeOut' }}
-          className="max-w-2xl text-base sm:text-lg md:text-xl text-gray-400 font-light mb-8 md:mb-12 whitespace-pre-line"
+          className="max-w-3xl mx-auto text-xs sm:text-base md:text-lg lg:text-xl text-gray-400 font-light mb-8 md:mb-12 whitespace-pre-line px-6 leading-relaxed"
         >
           {settings.heroSubtitle}
         </motion.p>
+
+        {clients.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.5, ease: 'easeOut' }}
+            className="w-full max-w-3xl mx-auto mb-12 overflow-hidden"
+          >
+            <p className="text-xs uppercase tracking-widest text-gray-500 mb-6">Empresas que confiam em nós</p>
+            <div className="flex space-x-8 animate-scroll">
+              {/* Duplicate the list to create a seamless loop */}
+              {[...clients, ...clients].map((client, index) => (
+                <div key={`${client.id}-${index}`} className="flex-shrink-0 w-32 h-16 relative grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+                  <img
+                    src={client.logoUrl}
+                    alt={client.name}
+                    className="w-full h-full object-contain"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}

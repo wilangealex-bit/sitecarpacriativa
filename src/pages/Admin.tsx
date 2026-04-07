@@ -2,11 +2,14 @@ import { useState } from 'react';
 import { usePortfolioStore } from '../store/usePortfolioStore';
 import { useCatalogStore } from '../store/useCatalogStore';
 import { useSiteStore } from '../store/useSiteStore';
-import { Plus, Trash2, Edit2, Image as ImageIcon, ArrowLeft, Save, Settings, LayoutGrid, Upload, BookOpen } from 'lucide-react';
+import { useServicesStore } from '../store/useServicesStore';
+import { useClientsStore } from '../store/useClientsStore';
+import { useReviewsStore } from '../store/useReviewsStore';
+import { Plus, Trash2, Edit2, Image as ImageIcon, ArrowLeft, Save, Settings, LayoutGrid, Upload, BookOpen, Briefcase, Users, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Admin() {
-  const [activeTab, setActiveTab] = useState<'portfolio' | 'catalog' | 'settings'>('portfolio');
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'catalog' | 'services' | 'clients' | 'reviews' | 'settings'>('portfolio');
   
   // Portfolio State
   const { projects, addProject, updateProject, deleteProject } = usePortfolioStore();
@@ -27,6 +30,33 @@ export default function Admin() {
     category: '',
     image: '',
     description: '',
+  });
+
+  // Services State
+  const { services, updateService } = useServicesStore();
+  const [isEditingService, setIsEditingService] = useState<string | null>(null);
+  const [serviceFormData, setServiceFormData] = useState({
+    title: '',
+    description: '',
+    image: '',
+  });
+
+  // Clients State
+  const { clients, addClient, deleteClient } = useClientsStore();
+  const [clientFormData, setClientFormData] = useState({
+    name: '',
+    logoUrl: '',
+  });
+
+  // Reviews State
+  const { reviews, addReview, updateReview, deleteReview } = useReviewsStore();
+  const [isEditingReview, setIsEditingReview] = useState<string | null>(null);
+  const [reviewFormData, setReviewFormData] = useState({
+    authorName: '',
+    authorPhoto: '',
+    rating: 5,
+    text: '',
+    date: 'Há 1 semana',
   });
 
   // Site Settings State
@@ -126,6 +156,52 @@ export default function Admin() {
     });
   };
 
+  const handleEditService = (service: any) => {
+    setIsEditingService(service.id);
+    setServiceFormData({
+      title: service.title,
+      description: service.description,
+      image: service.image,
+    });
+  };
+
+  const handleSaveService = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isEditingService) {
+      updateService(isEditingService, serviceFormData);
+      setIsEditingService(null);
+      setServiceFormData({ title: '', description: '', image: '' });
+    }
+  };
+
+  const handleAddClient = (e: React.FormEvent) => {
+    e.preventDefault();
+    addClient(clientFormData);
+    setClientFormData({ name: '', logoUrl: '' });
+  };
+
+  const handleAddReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isEditingReview) {
+      updateReview(isEditingReview, reviewFormData);
+      setIsEditingReview(null);
+    } else {
+      addReview(reviewFormData);
+    }
+    setReviewFormData({ authorName: '', authorPhoto: '', rating: 5, text: '', date: 'Há 1 semana' });
+  };
+
+  const handleEditReview = (review: any) => {
+    setIsEditingReview(review.id);
+    setReviewFormData({
+      authorName: review.authorName,
+      authorPhoto: review.authorPhoto,
+      rating: review.rating,
+      text: review.text,
+      date: review.date,
+    });
+  };
+
   return (
     <div className="min-h-screen bg-zinc-950 text-white p-6 md:p-12 font-sans selection:bg-blue-500/30 selection:text-blue-200">
       <div className="max-w-6xl mx-auto">
@@ -154,6 +230,24 @@ export default function Admin() {
             className={`flex items-center gap-2 uppercase tracking-widest font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'catalog' ? 'text-blue-400' : 'text-gray-500 hover:text-white'}`}
           >
             <BookOpen className="w-4 h-4" /> Catálogos
+          </button>
+          <button 
+            onClick={() => setActiveTab('services')} 
+            className={`flex items-center gap-2 uppercase tracking-widest font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'services' ? 'text-blue-400' : 'text-gray-500 hover:text-white'}`}
+          >
+            <Briefcase className="w-4 h-4" /> Serviços
+          </button>
+          <button 
+            onClick={() => setActiveTab('clients')} 
+            className={`flex items-center gap-2 uppercase tracking-widest font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'clients' ? 'text-blue-400' : 'text-gray-500 hover:text-white'}`}
+          >
+            <Users className="w-4 h-4" /> Clientes
+          </button>
+          <button 
+            onClick={() => setActiveTab('reviews')} 
+            className={`flex items-center gap-2 uppercase tracking-widest font-bold text-sm whitespace-nowrap transition-colors ${activeTab === 'reviews' ? 'text-blue-400' : 'text-gray-500 hover:text-white'}`}
+          >
+            <Star className="w-4 h-4" /> Avaliações
           </button>
           <button 
             onClick={() => setActiveTab('settings')} 
@@ -478,6 +572,356 @@ export default function Admin() {
               </div>
             </div>
           </div>
+        ) : activeTab === 'services' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Services Form */}
+            <div className="lg:col-span-1">
+              <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-8 sticky top-8">
+                <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <Edit2 className="w-5 h-5 text-blue-400" />
+                  Editar Serviço
+                </h2>
+                
+                {!isEditingService ? (
+                  <p className="text-gray-400 text-sm">Selecione um serviço na lista ao lado para editar.</p>
+                ) : (
+                  <form onSubmit={handleSaveService} className="flex flex-col gap-4">
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Título</label>
+                      <input
+                        type="text"
+                        required
+                        value={serviceFormData.title}
+                        onChange={(e) => setServiceFormData({ ...serviceFormData, title: e.target.value })}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">URL da Imagem de Fundo ou Upload</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          value={serviceFormData.image}
+                          onChange={(e) => setServiceFormData({ ...serviceFormData, image: e.target.value })}
+                          className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        />
+                        <label className="cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-xl px-4 py-3 flex items-center justify-center transition-colors" title="Fazer Upload">
+                          <Upload className="w-5 h-5" />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => handleImageUpload(e, (base64) => setServiceFormData({ ...serviceFormData, image: base64 }))}
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Descrição</label>
+                      <textarea
+                        required
+                        value={serviceFormData.description}
+                        onChange={(e) => setServiceFormData({ ...serviceFormData, description: e.target.value })}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        rows={5}
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="mt-4 w-full bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Save className="w-5 h-5" />
+                      Salvar Alterações
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingService(null);
+                        setServiceFormData({ title: '', description: '', image: '' });
+                      }}
+                      className="w-full bg-transparent hover:bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest py-3 rounded-xl transition-colors text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+
+            {/* Services List */}
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {services.map((service) => (
+                  <div key={service.id} className="bg-zinc-900/30 border border-white/10 rounded-3xl overflow-hidden group">
+                    <div className="h-48 relative overflow-hidden">
+                      <img 
+                        src={service.image} 
+                        alt={service.title} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
+                        <div>
+                          <h3 className="text-xl font-bold text-white uppercase tracking-tight">
+                            {service.title}
+                          </h3>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 flex items-center justify-between border-t border-white/5 bg-black/20">
+                      <p className="text-xs text-gray-400 line-clamp-1 flex-1 mr-4">{service.description}</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditService(service)}
+                          className="w-10 h-10 rounded-full bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 flex items-center justify-center transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'clients' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Clients Form */}
+            <div className="lg:col-span-1">
+              <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-8 sticky top-8">
+                <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-blue-400" />
+                  Novo Cliente
+                </h2>
+                
+                <form onSubmit={handleAddClient} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Nome da Empresa</label>
+                    <input
+                      type="text"
+                      required
+                      value={clientFormData.name}
+                      onChange={(e) => setClientFormData({ ...clientFormData, name: e.target.value })}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      placeholder="Ex: Empresa X"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">URL da Logo ou Upload</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={clientFormData.logoUrl}
+                        onChange={(e) => setClientFormData({ ...clientFormData, logoUrl: e.target.value })}
+                        className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                        placeholder="https://..."
+                      />
+                      <label className="cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-xl px-4 py-3 flex items-center justify-center transition-colors" title="Fazer Upload">
+                        <Upload className="w-5 h-5" />
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleImageUpload(e, (base64) => setClientFormData({ ...clientFormData, logoUrl: base64 }))}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="mt-4 w-full bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Adicionar Cliente
+                  </button>
+                </form>
+              </div>
+            </div>
+
+            {/* Clients List */}
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                {clients.map((client) => (
+                  <div key={client.id} className="bg-zinc-900/30 border border-white/10 rounded-3xl overflow-hidden group flex flex-col items-center justify-center p-6 relative">
+                    <div className="h-24 w-full relative flex items-center justify-center mb-4">
+                      <img 
+                        src={client.logoUrl} 
+                        alt={client.name} 
+                        className="max-w-full max-h-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    </div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-tight text-center">
+                      {client.name}
+                    </h3>
+                    <button
+                      onClick={() => deleteClient(client.id)}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 hover:bg-red-500/20 text-gray-400 hover:text-red-400 flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                      title="Excluir"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                
+                {clients.length === 0 && (
+                  <div className="col-span-full py-12 text-center border border-dashed border-white/10 rounded-3xl">
+                    <Users className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400 font-light">Nenhum cliente cadastrado.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : activeTab === 'reviews' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            {/* Reviews Form */}
+            <div className="lg:col-span-1">
+              <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-8 sticky top-8">
+                <h2 className="text-xl font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                  {isEditingReview ? <Edit2 className="w-5 h-5 text-blue-400" /> : <Plus className="w-5 h-5 text-blue-400" />}
+                  {isEditingReview ? 'Editar Avaliação' : 'Nova Avaliação'}
+                </h2>
+                <form onSubmit={handleAddReview} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Nome do Cliente</label>
+                    <input
+                      type="text"
+                      required
+                      value={reviewFormData.authorName}
+                      onChange={(e) => setReviewFormData({ ...reviewFormData, authorName: e.target.value })}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Foto do Cliente (URL)</label>
+                    <input
+                      type="url"
+                      value={reviewFormData.authorPhoto}
+                      onChange={(e) => setReviewFormData({ ...reviewFormData, authorPhoto: e.target.value })}
+                      placeholder="Deixe em branco para avatar automático"
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Nota (1 a 5)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="5"
+                        required
+                        value={reviewFormData.rating}
+                        onChange={(e) => setReviewFormData({ ...reviewFormData, rating: Number(e.target.value) })}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Data</label>
+                      <input
+                        type="text"
+                        required
+                        value={reviewFormData.date}
+                        onChange={(e) => setReviewFormData({ ...reviewFormData, date: e.target.value })}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Texto da Avaliação</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={reviewFormData.text}
+                      onChange={(e) => setReviewFormData({ ...reviewFormData, text: e.target.value })}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="mt-4 w-full bg-blue-500 hover:bg-blue-400 text-white font-bold uppercase tracking-widest py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  >
+                    {isEditingReview ? <Save className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                    {isEditingReview ? 'Salvar Alterações' : 'Adicionar Avaliação'}
+                  </button>
+                  {isEditingReview && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingReview(null);
+                        setReviewFormData({ authorName: '', authorPhoto: '', rating: 5, text: '', date: 'Há 1 semana' });
+                      }}
+                      className="w-full bg-transparent hover:bg-white/5 border border-white/10 text-white font-bold uppercase tracking-widest py-3 rounded-xl transition-colors text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </form>
+              </div>
+            </div>
+
+            {/* Reviews List */}
+            <div className="lg:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-zinc-900/30 border border-white/10 rounded-3xl overflow-hidden p-6 relative">
+                    <div className="flex items-center gap-4 mb-4">
+                      <img 
+                        src={review.authorPhoto || `https://ui-avatars.com/api/?name=${encodeURIComponent(review.authorName)}&background=random`} 
+                        alt={review.authorName} 
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                      <div>
+                        <h3 className="text-white font-bold">{review.authorName}</h3>
+                        <div className="flex items-center gap-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star 
+                              key={i} 
+                              className={`w-3 h-3 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600'}`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-400 text-sm italic mb-4 line-clamp-3">"{review.text}"</p>
+                    <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-white/5">
+                      <button
+                        onClick={() => handleEditReview(review)}
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-blue-500/20 text-gray-400 hover:text-blue-400 flex items-center justify-center transition-colors"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteReview(review.id)}
+                        className="w-10 h-10 rounded-full bg-white/5 hover:bg-red-500/20 text-gray-400 hover:text-red-400 flex items-center justify-center transition-colors"
+                        title="Excluir"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                
+                {reviews.length === 0 && (
+                  <div className="col-span-full py-12 text-center border border-dashed border-white/10 rounded-3xl">
+                    <Star className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400 font-light">Nenhuma avaliação cadastrada.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="bg-zinc-900/50 border border-white/10 rounded-3xl p-6 md:p-8 max-w-4xl">
             <h2 className="text-xl font-bold uppercase tracking-widest mb-8 flex items-center gap-2">
@@ -510,6 +954,28 @@ export default function Admin() {
                       </label>
                     </div>
                     <p className="text-xs text-gray-500 mt-2">Deixe em branco para usar o ícone padrão.</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Foto de Perfil do WhatsApp (Opcional)</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="text" 
+                        value={settings.whatsappProfileUrl || ''} 
+                        onChange={e => updateSettings({ whatsappProfileUrl: e.target.value })} 
+                        className="flex-1 w-full bg-black/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors" 
+                        placeholder="https://..." 
+                      />
+                      <label className="cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/50 text-blue-400 rounded-xl px-4 py-3 flex items-center justify-center transition-colors" title="Fazer Upload">
+                        <Upload className="w-5 h-5" />
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          className="hidden" 
+                          onChange={(e) => handleImageUpload(e, (base64) => updateSettings({ whatsappProfileUrl: base64 }))}
+                        />
+                      </label>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Se vazio, usará a logo do site.</p>
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-xs uppercase tracking-widest text-gray-400 mb-2">Imagem de Fundo (Hero) ou Upload</label>

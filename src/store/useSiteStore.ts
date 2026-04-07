@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 
 export interface SiteSettings {
   logoUrl: string;
+  whatsappProfileUrl: string;
   heroImage: string;
   heroTitle1: string;
   heroTitleHighlight: string;
@@ -35,11 +36,12 @@ export const useSiteStore = create<SiteStore>()(
     (set) => ({
       settings: {
         logoUrl: '',
+        whatsappProfileUrl: '',
         heroImage: 'https://picsum.photos/seed/neon-city/1920/1080?blur=2',
-        heroTitle1: 'Impacto',
-        heroTitleHighlight: 'Visual',
-        heroTitle2: 'Absoluto',
-        heroSubtitle: 'Especialistas em Fachadas em ACM, Letreiros Luminosos e Impressão Digital de alta definição. Transformamos sua marca em um marco na paisagem urbana.',
+        heroTitle1: 'Fachadas de impacto podem aumentar suas',
+        heroTitleHighlight: 'vendas em até 40%*',
+        heroTitle2: '',
+        heroSubtitle: 'Destaque sua marca com fachadas, letreiros e comunicação visual de alto impacto. Tenha projetos personalizados que unem tecnologia, inovação e qualidade para transformar seu negócio.',
         brandName: 'Carpa',
         brandHighlight: 'Criativa',
         contact: {
